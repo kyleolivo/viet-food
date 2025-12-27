@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { UserButton } from '@clerk/nextjs';
 import PhotoUpload from '@/components/PhotoUpload';
 import FoodGallery from '@/components/FoodGallery';
 
@@ -17,9 +18,18 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold text-gray-800 text-center">
-            Food Identifier
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-800">
+              Food Identifier
+            </h1>
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'w-10 h-10',
+                },
+              }}
+            />
+          </div>
         </div>
       </header>
 

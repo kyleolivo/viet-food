@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { put } from '@vercel/blob';
 
@@ -8,6 +9,15 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('image') as File;
 
