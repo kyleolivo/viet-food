@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 
     // Use Anthropic's vision API to identify the food
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-0-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 1024,
       messages: [
         {
