@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
     // Upload image to Vercel Blob
     const blob = await put(file.name, file, {
       access: 'public',
+      addRandomSuffix: true,
     });
 
     // Use Anthropic's vision API to identify the food
