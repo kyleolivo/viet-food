@@ -143,7 +143,7 @@ export async function checkRateLimit(
     WHERE user_id = ${userId}
     AND action = ${action}
     AND status != 'blocked'
-    AND created_at > NOW() - INTERVAL '${config.windowMinutes} minutes'
+    AND created_at > NOW() - make_interval(mins => ${config.windowMinutes})
   `;
 
   const count = parseInt(rows[0].count, 10);
