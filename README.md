@@ -1,14 +1,33 @@
 # Food Identifier
 
-A mobile-friendly web application that uses AI to identify food from photos. Take or upload a photo of any dish, and the app will identify it, provide a description, and save it to your personal gallery.
+A mobile-friendly web application that uses AI to identify food from photos. Perfect for travelers exploring Vietnamese cuisine, this app helps you identify, capture, and remember the amazing foods you encounter. Take or upload a photo of any dish, add optional context, and let AI identify it with key ingredients and cultural significance.
 
 ## Features
 
+### Core Features
 - **Photo Capture/Upload**: Take photos directly from your mobile device or upload existing images
-- **AI-Powered Identification**: Uses Anthropic's Claude Vision API to identify foods and provide descriptions
+- **Optional Context**: Add notes like "eaten at street vendor in Hanoi" to help with identification
+- **AI-Powered Identification**: Uses Anthropic's Claude Vision API to identify foods with:
+  - Name of the dish
+  - Key ingredients
+  - Cultural significance and what makes it special in the region
 - **Smart Storage**: Stores optimized images using Vercel Blob Storage
-- **Mobile-Optimized Gallery**: Browse your food collection in a beautiful, responsive grid layout
-- **Detailed View**: Tap any food to see the full image, name, description, and date added
+- **Paginated Gallery**: Browse your food collection with pagination (20 items per page)
+- **Detailed View**: Tap any food to see full image, name, ingredients, description, your notes, and date added
+
+### Security & Safety Features
+- **Content Moderation**: AI-powered moderation checks for inappropriate images and text
+- **Rate Limiting**:
+  - 20 identifications per hour
+  - 30 saves per hour
+  - 100 API calls per hour
+- **Audit Logging**: Comprehensive logging of all user actions for security and debugging
+- **Abuse Detection**: Automatic detection and account locking for abusive behavior
+- **Alert System**: Admin notifications when abuse is detected
+
+### Demo Mode
+- **Public Demo**: View sample Vietnamese dishes at `/demo` without signing up
+- **No Authentication Required**: Safely explore the app's capabilities before creating an account
 
 ## Tech Stack
 
@@ -63,7 +82,10 @@ On first deployment or local setup, initialize the database by visiting:
 http://localhost:3000/api/init-db
 ```
 
-This will create the `food_entries` table.
+This will create the following tables:
+- `food_entries` - User's saved food identifications
+- `audit_logs` - Security and audit logging
+- `user_status` - User account status and abuse tracking
 
 ## Deployment to Vercel
 
@@ -159,27 +181,71 @@ BLOB_READ_WRITE_TOKEN=
 
 ## Usage
 
-1. **Sign In**:
+1. **Try the Demo** (Optional):
+   - Visit `/demo` to see sample Vietnamese dishes without signing up
+   - Explore the interface and see how food identification works
+
+2. **Sign In**:
    - Visit the app and you'll be redirected to sign in
    - Choose "Continue with Google" or "Continue with Apple"
    - Or sign up with email/password
 
-2. **Add a Food**:
+3. **Add a Food**:
    - Click the "Add Food" tab
+   - (Optional) Add context in the text field (e.g., "Spicy noodle soup from Hanoi")
    - Choose "Take Photo" (on mobile) or "Upload Photo"
-   - Wait for AI identification
-   - Review the name and description
+   - Wait for AI identification with content moderation
+   - Review the name, ingredients, and description
    - Click "Save" to add to your gallery
 
-3. **Browse Gallery**:
+4. **Browse Gallery**:
    - View all your saved foods in the Gallery tab
-   - Click any food to see full details
+   - Navigate through pages if you have more than 20 foods
+   - Click any food to see full details including ingredients and your notes
    - Foods are sorted by most recent first
    - Only you can see your foods (private to your account)
 
-4. **User Menu**:
+5. **User Menu**:
    - Click your profile picture in the top right
    - Access account settings or sign out
+
+## Security & Privacy
+
+### Content Moderation
+- All uploaded images are automatically checked for inappropriate content
+- User-provided text context is moderated for hate speech, harassment, and spam
+- Violations are logged and may result in automatic account locking
+
+### Rate Limiting
+To prevent abuse, the following limits apply:
+- **Food Identification**: 20 per hour
+- **Save Food**: 30 per hour
+- **API Calls**: 100 per hour
+
+If you exceed these limits, you'll receive a 429 error. Limits reset hourly.
+
+### Audit Logging
+All actions are logged including:
+- User ID and timestamp
+- Action performed (identify, save, list)
+- Success/failure/blocked status
+- IP address and user agent
+- Details of the action
+
+### Abuse Detection
+The system automatically:
+- Tracks blocked actions per user
+- Locks accounts after 10 blocked actions in an hour
+- Locks accounts after 50 total blocked actions
+- Sends admin alerts when accounts are locked
+- Provides detailed audit trails for investigation
+
+### Data Privacy
+- Your food entries are private and only visible to you
+- Images are stored securely in Vercel Blob Storage
+- Authentication is handled by Clerk with industry-standard security
+- All API endpoints require authentication
+- Database uses secure Postgres connections
 
 ## Project Structure
 
@@ -187,27 +253,50 @@ BLOB_READ_WRITE_TOKEN=
 viet-food/
 ├── app/
 │   ├── api/
-│   │   ├── foods/          # API routes for food CRUD
-│   │   ├── identify/       # AI food identification endpoint
-│   │   └── init-db/        # Database initialization
-│   ├── layout.tsx          # Root layout with metadata
-│   └── page.tsx            # Main page with tabs
+│   │   ├── foods/          # API routes for food CRUD with pagination
+│   │   ├── identify/       # AI food identification with moderation
+│   │   └── init-db/        # Database initialization (all tables)
+│   ├── demo/               # Public demo page
+│   ├── sign-in/            # Clerk sign-in page
+│   ├── sign-up/            # Clerk sign-up page
+│   ├── layout.tsx          # Root layout with ClerkProvider
+│   └── page.tsx            # Main app page with tabs
 ├── components/
-│   ├── FoodGallery.tsx     # Gallery grid view
-│   └── PhotoUpload.tsx     # Photo capture/upload component
+│   ├── FoodGallery.tsx     # Gallery with pagination
+│   └── PhotoUpload.tsx     # Photo upload with context input
 ├── lib/
-│   ├── db.ts               # Database functions
+│   ├── audit.ts            # Audit logging functions
+│   ├── db.ts               # Database functions for food entries
+│   ├── moderation.ts       # Content moderation with Claude
+│   ├── security.ts         # Rate limiting, abuse detection, account locking
 │   └── types.ts            # TypeScript interfaces
+├── middleware.ts           # Clerk auth middleware
 ├── next.config.ts          # Next.js configuration
 └── vercel.json             # Vercel deployment config
 ```
 
 ## API Routes
 
-- `GET /api/foods` - Fetch all food entries
+### Public Routes
+- `GET /api/init-db` - Initialize database tables (food_entries, audit_logs, user_status)
+
+### Authenticated Routes
+All routes below require authentication and include rate limiting and audit logging:
+
+- `GET /api/foods?limit=20&offset=0` - Fetch paginated food entries for current user
+  - Returns: `{ entries: FoodEntry[], total: number, limit: number, offset: number }`
+  - Rate limit: 100 per hour
+
 - `POST /api/foods` - Save a new food entry
+  - Body: `{ name, description, ingredients, imageUrl, userContext }`
+  - Rate limit: 30 per hour
+  - Includes account lock check
+
 - `POST /api/identify` - Identify food from image
-- `GET /api/init-db` - Initialize database tables
+  - Body: FormData with `image` file and optional `context` text
+  - Rate limit: 20 per hour
+  - Includes content moderation for both image and text
+  - Returns: `{ name, description, ingredients: string[], imageUrl }`
 
 ## License
 

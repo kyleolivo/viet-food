@@ -9,11 +9,13 @@ interface PhotoUploadProps {
 
 export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [userContext, setUserContext] = useState('');
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [identification, setIdentification] = useState<{
     name: string;
     description: string;
+    ingredients: string[];
     imageUrl: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +34,9 @@ export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadPro
     try {
       const formData = new FormData();
       formData.append('image', file);
+      if (userContext.trim()) {
+        formData.append('context', userContext.trim());
+      }
 
       const response = await fetch('/api/identify', {
         method: 'POST',
@@ -66,7 +71,9 @@ export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadPro
         body: JSON.stringify({
           name: identification.name,
           description: identification.description,
+          ingredients: identification.ingredients,
           imageUrl: identification.imageUrl,
+          userContext: userContext.trim() || null,
         }),
       });
 
@@ -89,6 +96,7 @@ export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadPro
   const handleCancel = () => {
     setSelectedImage(null);
     setIdentification(null);
+    setUserContext('');
   };
 
   return (
@@ -98,6 +106,22 @@ export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadPro
           <h2 className="text-2xl font-bold text-center text-gray-800">
             Add a Food Photo
           </h2>
+
+          <div className="space-y-2">
+            <label htmlFor="context" className="block text-sm font-medium text-gray-700">
+              Additional Context (Optional)
+            </label>
+            <textarea
+              id="context"
+              value={userContext}
+              onChange={(e) => setUserContext(e.target.value)}
+              placeholder="e.g., 'Eaten at a street vendor in Hanoi' or 'Spicy noodle soup'"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              rows={2}
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-500">{userContext.length}/200 characters</p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
@@ -193,6 +217,21 @@ export default function PhotoUpload({ onIdentificationComplete }: PhotoUploadPro
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {identification.name}
                 </h3>
+                {identification.ingredients && identification.ingredients.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-1">Key Ingredients:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {identification.ingredients.map((ingredient, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                        >
+                          {ingredient}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="text-gray-600">{identification.description}</p>
               </div>
 
