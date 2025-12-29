@@ -95,7 +95,7 @@ export async function getBlockedActions(
     SELECT COUNT(*) as count FROM audit_logs
     WHERE user_id = ${userId}
     AND status = 'blocked'
-    AND created_at > NOW() - INTERVAL '${timeWindowMinutes} minutes'
+    AND created_at > NOW() - make_interval(mins => ${timeWindowMinutes})
   `;
   return parseInt(rows[0].count, 10);
 }
@@ -109,7 +109,7 @@ export async function getActionCount(
     SELECT COUNT(*) as count FROM audit_logs
     WHERE user_id = ${userId}
     AND action = ${action}
-    AND created_at > NOW() - INTERVAL '${timeWindowMinutes} minutes'
+    AND created_at > NOW() - make_interval(mins => ${timeWindowMinutes})
   `;
   return parseInt(rows[0].count, 10);
 }
